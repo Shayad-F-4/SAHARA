@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= category %> Help - Sahara</title>
+  <style>
+    :root{ --bg:#0b1220; --panel:#14202b; --panel2:#15232d; --text:#e6eef6; --muted:#9aa6b3; --accent:#4a86ff; }
+    *{ box-sizing:border-box }
+    body{ margin:0; background:var(--bg); color:var(--text); font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    .wrap{ max-width:980px; margin:0 auto; padding:20px; }
+    .top{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .top a{ color:var(--muted); text-decoration:none }
+    .panel{ background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:16px; box-shadow:0 6px 24px rgba(2,6,23,.6) }
+    h1{ margin:0; font-size:22px }
+    .grid{ display:grid; grid-template-columns: repeat(2,1fr); gap:16px; margin-top:16px }
+    .card{ background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px }
+    .meta{ display:flex; justify-content:space-between; color:var(--muted); font-size:13px }
+    .tag{ display:inline-block; padding:6px 10px; font-size:12px; border-radius:999px; background:rgba(255,165,0,0.12); color:#ffda9a; font-weight:700 }
+    .actions{ display:flex; gap:10px; align-items:center }
+    .btn{ padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700 }
+    .btn-help{ background:#10b981; color:#fff }
+    .btn-del{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.08) }
+    @media (max-width:820px){ .grid{ grid-template-columns: 1fr } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a href="/">← Back</a>
+      <div style="opacity:.7"><%= name %></div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <h1><%= category %> Help Requests</h1>
+      <div style="color:var(--muted); margin-top:4px">Browse and volunteer to help people needing <%= category %>.</div>
+    </div>
+
+    <div id="list" class="grid" aria-live="polite" style="margin-top:12px"></div>
+  </div>
+
+  <script>
+    const category = '<%= category %>';
+    window.currentUser = '<%= (user||'').toString() %>';
+
+    document.addEventListener('DOMContentLoaded', load);
+
+    async function load(){
+      try{
+        const res = await fetch('/posts?category=' + encodeURIComponent(category), { credentials:'same-origin' });
+        const posts = res.ok ? await res.json() : [];
+        const list = document.getElementById('list');
+        list.innerHTML = (posts||[]).map(renderCard).join('') || '<div style="opacity:.7">No requests yet.</div>';
+      }catch(e){
+        document.getElementById('list').innerHTML = '<div style="opacity:.7">Failed to load.</div>';
+      }
+    }
+
+    function renderCard(p){
+      const owner = (p.ownerUsername||'').toLowerCase();
+      const me = (window.currentUser||'').toLowerCase();
+      return `
+        <article class="card" data-id="${p._id}">
+          <div class="meta">
+            <div>${p.category} · ${p.urgency}</div>
+            <div>📍 ${p.location}</div>
+          </div>
+          <h3 style="margin:0">${p.title}</h3>
+          <div style="color:var(--muted)">${p.description||''}</div>
+          <div class="actions">
+            <button class="btn btn-help" onclick="volunteer('${p._id}')">I Can Help</button>
+            ${me && owner && me===owner ? `<button class="btn btn-del" onclick="delPost('${p._id}')">Delete</button>` : ''}
+          </div>
+        </article>
+      `;
+    }
+
+    async function volunteer(id){
+      const contact = prompt('Enter your contact number to share with the requester:');
+      if(!contact) return;
+      try{
+        const res = await fetch('/posts/' + id + '/help', {
+          method: 'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify({ contact })
+        });
+        if(!res.ok){
+          const err = await res.json().catch(()=>({error:'Failed'}));
+          alert(err.error||'Failed'); return;
+        }
+        alert('Your contact has been shared. Thank you!');
+      }catch(e){ alert('Network error'); }
+    }
+
+    async function delPost(id){
+      if(!confirm('Delete this post?')) return;
+      try{
+        const res = await fetch('/posts/'+id, { method:'DELETE', credentials:'same-origin' });
+        if(res.status===204){
+          const el = document.querySelector(`[data-id="${id}"]`);
+          if(el && el.parentNode) el.parentNode.removeChild(el);
+        } else {
+          const err = await res.json().catch(()=>({error:'Failed'}));
+          alert(err.error||'Failed to delete');
+        }
+      }catch(e){ alert('Network error'); }
+    }
+  </script>
+</body>
+</html>

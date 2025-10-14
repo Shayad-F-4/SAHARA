@@ -14,8 +14,14 @@ let checkLogin = (req, res, next) => {
 // GET /posts - public list
 router.get('/posts', async (req, res) => {
   try {
+    // Optional category filter via query string
+    const { category } = req.query;
+    const filter = {};
+    if (category && typeof category === 'string' && category.trim()) {
+      filter.category = category.trim();
+    }
     // Do not expose helper contacts publicly
-    const posts = await Post.find({}, '-helpers').sort({ createdAt: -1 });
+    const posts = await Post.find(filter, '-helpers').sort({ createdAt: -1 });
     return res.json(posts);
   } catch (err) {
     return res.status(500).json({ error: 'Server error' });

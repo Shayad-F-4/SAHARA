@@ -29,6 +29,12 @@ router.get('/skills_connect', checkLogin, (req, res) => {
   res.render('skills');
 });
 
+// Category-specific help page
+router.get('/help/:category', checkLogin, (req, res) => {
+  const category = req.params.category;
+  res.render('help_category', { category, user: req.session.user, name: req.session.name });
+});
+
 router.get('/profile', checkLogin, (req, res) => {
   res.send(`
     <h1>Profile Page</h1>

@@ -58,6 +58,12 @@
             min-width: 120px;
         }
 
+        /* Ensure dropdown options remain readable when native UI uses white backgrounds */
+        .select option, select option {
+            background: #ffffff;
+            color: #000000;
+        }
+
         .btn {
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
@@ -111,6 +117,11 @@
         .category-card:hover {
             transform: scale(1.05);
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1));
+        }
+
+        .category-card.active {
+            outline: 2px solid #f97316;
+            box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.25);
         }
 
         .category-icon {
@@ -440,32 +451,32 @@
 
         <!-- Categories -->
         <div class="categories-grid">
-            <div class="category-card">
+            <div class="category-card" role="button" tabindex="0" data-category="Construction" onclick="filterCategory('Construction')">
                 <div class="category-icon construction">🏗️</div>
                 <h3>Construction</h3>
                 <p style="font-size: 0.75rem; color: #94a3b8;">67 workers</p>
             </div>
-            <div class="category-card">
+            <div class="category-card" role="button" tabindex="0" data-category="Plumbing" onclick="filterCategory('Plumbing')">
                 <div class="category-icon plumbing">🔧</div>
                 <h3>Plumbing</h3>
                 <p style="font-size: 0.75rem; color: #94a3b8;">45 plumbers</p>
             </div>
-            <div class="category-card">
+            <div class="category-card" role="button" tabindex="0" data-category="Electrical" onclick="filterCategory('Electrical')">
                 <div class="category-icon electrical">⚡</div>
                 <h3>Electrical</h3>
                 <p style="font-size: 0.75rem; color: #94a3b8;">38 electricians</p>
             </div>
-            <div class="category-card">
+            <div class="category-card" role="button" tabindex="0" data-category="Carpentry" onclick="filterCategory('Carpentry')">
                 <div class="category-icon carpentry">🪚</div>
                 <h3>Carpentry</h3>
                 <p style="font-size: 0.75rem; color: #94a3b8;">29 carpenters</p>
             </div>
-            <div class="category-card">
+            <div class="category-card" role="button" tabindex="0" data-category="Painting" onclick="filterCategory('Painting')">
                 <div class="category-icon painting">🎨</div>
                 <h3>Painting</h3>
                 <p style="font-size: 0.75rem; color: #94a3b8;">22 painters</p>
             </div>
-            <div class="category-card">
+            <div class="category-card" role="button" tabindex="0" data-category="Cleaning" onclick="filterCategory('Cleaning')">
                 <div class="category-icon cleaning">🧹</div>
                 <h3>Cleaning</h3>
                 <p style="font-size: 0.75rem; color: #94a3b8;">31 cleaners</p>
@@ -480,13 +491,14 @@
 
         <!-- Job Requests -->
         <div class="content-grid">
-            <div class="card">
+            <div class="card" data-category="Construction">
                 <div class="card-header">
                     <div class="category-badge urgency-high">
                         🏗️ Construction
                     </div>
                     <div class="time-posted">8 min ago</div>
                 </div>
+
                 <h3 class="job-title">Need experienced mason for house construction</h3>
                 <p style="margin: 0.5rem 0; color: #cbd5e1;">Building a 2-story house. Need skilled mason for brickwork and concrete work.</p>
                 
@@ -521,13 +533,14 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card" data-category="Plumbing">
                 <div class="card-header">
                     <div class="category-badge urgency-critical">
                         🔧 Plumbing
                     </div>
                     <div class="time-posted">3 min ago</div>
                 </div>
+
                 <h3 class="job-title">Urgent plumber needed for water pipe burst</h3>
                 <p style="margin: 0.5rem 0; color: #cbd5e1;">Main water pipe burst in house. Need immediate repair to prevent flooding.</p>
                 
@@ -562,13 +575,14 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card" data-category="Electrical">
                 <div class="card-header">
                     <div class="category-badge urgency-medium">
                         ⚡ Electrical
                     </div>
                     <div class="time-posted">45 min ago</div>
                 </div>
+
                 <h3 class="job-title">Electrician for office wiring renovation</h3>
                 <p style="margin: 0.5rem 0; color: #cbd5e1;">Complete rewiring of 3000 sq ft office space. Modern electrical setup required.</p>
                 
@@ -603,13 +617,14 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card" data-category="Carpentry">
                 <div class="card-header">
                     <div class="category-badge urgency-medium">
                         🪚 Carpentry
                     </div>
                     <div class="time-posted">2 hours ago</div>
                 </div>
+
                 <h3 class="job-title">Carpenter for custom furniture making</h3>
                 <p style="margin: 0.5rem 0; color: #cbd5e1;">Making custom wardrobes, tables and chairs for residential project.</p>
                 
@@ -828,6 +843,26 @@
         function generateTimeAgo() {
             const times = ['Just now', '2 min ago', '5 min ago', '15 min ago', '30 min ago', '1 hour ago'];
             return times[Math.floor(Math.random() * times.length)];
+        }
+
+        // Filter by top category cards
+        function filterCategory(category) {
+            // Toggle active style on category cards
+            const catCards = document.querySelectorAll('.categories-grid .category-card');
+            catCards.forEach(el => {
+                if (el.getAttribute('data-category') === category) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            // Show only matching job cards
+            const jobCards = document.querySelectorAll('.content-grid .card');
+            jobCards.forEach(card => {
+                const c = card.getAttribute('data-category') || '';
+                card.style.display = (c === category) ? '' : 'none';
+            });
         }
 
         // Handle Services Form Submission
