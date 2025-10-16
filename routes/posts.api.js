@@ -119,6 +119,60 @@ router.post('/posts/:id/help', checkLogin, async (req, res) => {
   }
 });
 
+// GET /api/stats - live stats for home dashboard
+router.get('/api/stats', async (req, res) => {
+  try{
+    // Only fetch the fields we need
+    const posts = await Post.find({}, 'category helpers createdAt date').lean();
+
+    const categories = ['Medical','Food','Jobs','Shelter','Transport','Education'];
+    const categoryCounts = Object.fromEntries(categories.map(c=>[c,0]));
+
+    let totalHelpers = 0;
+    const helperUsers = new Set();
+
+    let responseAccumMinutes = 0;
+    let responseCount = 0;
+
+    for(const p of posts){
+      const cat = p.category || '';
+      if(typeof categoryCounts[cat] === 'number') categoryCounts[cat]++;
+
+      const helpers = Array.isArray(p.helpers) ? p.helpers : [];
+      totalHelpers += helpers.length;
+      helpers.forEach(h => { if(h && h.username) helperUsers.add(String(h.username).toLowerCase()); });
+
+      if(helpers.length > 0){
+        const first = helpers.reduce((m, h) => {
+          const t = (h && h.createdAt) ? new Date(h.createdAt).getTime() : Infinity;
+          return Math.min(m, t);
+        }, Infinity);
+        const postTs = p.createdAt ? new Date(p.createdAt).getTime() : (p.date ? new Date(p.date).getTime() : null);
+        if(isFinite(first) && postTs){
+          const mins = Math.max(0, (first - postTs) / 60000);
+          responseAccumMinutes += mins;
+          responseCount += 1;
+        }
+      }
+    }
+
+    const uniqueHelpers = helperUsers.size;
+    const livesSaved = totalHelpers; // simple proxy as requested
+    const avgResponseMinutes = responseCount > 0 ? Number((responseAccumMinutes/responseCount).toFixed(1)) : 0;
+
+    return res.json({
+      categories: categoryCounts,
+      totals: {
+        activeHelpers: uniqueHelpers,
+        livesSaved,
+        avgResponseMinutes
+      }
+    });
+  }catch(e){
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
 
 

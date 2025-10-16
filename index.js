@@ -5,13 +5,17 @@ const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 const User = require('./model/user.model')
 const connectDB = require('./config/db');
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const post = require('./routes/post');
 const postsApi = require('./routes/posts.api');
+const helpHubApi = require('./routes/helpHub.api');
+const skillsApi = require('./routes/skills.api');
+const settingsRoutes = require('./routes/settings');
 
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3000
 
 //Database Connection
 connectDB();
@@ -20,9 +24,10 @@ connectDB();
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json());
 app.set("view engine", "ejs");
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(session({
-  secret : process.env.SESSION_SECRET,
+  secret : process.env.SESSION_SECRET || 'dev_secret_change_me',
   resave: false,
   saveUninitialized: false
 }))
@@ -40,7 +45,20 @@ let checkLogin = (req,res,next) => {
 app.use('/', authRoutes);
 app.use('/', post);
 app.use('/', postsApi);
-// Routes
+app.use('/', helpHubApi);
+app.use('/', settingsRoutes);
+app.use('/', skillsApi);
+
+// Help Hub page (React via EJS)
+app.get('/help-hub', (req, res) => {
+  res.render('help_hub', { user: req.session.user || '' });
+});
+
+// Crisis Map page (client-side only; localStorage persistence)
+app.get('/crisis-map', (req, res) => {
+  res.render('crisis_map', { user: req.session.user || '' });
+});
+
 // app.get('/', checkLogin, (req, res) => {
 //   res.render('home1', { 
 //     error: null,

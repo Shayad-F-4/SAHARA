@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sahara — Help Hub</title>
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1220;color:#e6eef6}
+    .container{max-width:1200px;margin:0 auto;padding:24px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    .title{font-size:28px;font-weight:800}
+    .muted{color:#9aa6b3}
+    .btn{background:#4a86ff;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    select{background:transparent;color:#e6eef6;border:1px solid rgba(255,255,255,0.1);padding:8px 10px;border-radius:8px}
+    /* Ensure native dropdown options are readable on white OS menus */
+    .topbar select option{ color:#111; background:#fff; }
+    /* Small focus tweak for visibility */
+    .topbar select:focus{ outline:none; box-shadow:0 0 0 3px rgba(74,134,255,0.15); }
+    .grid{display:grid;gap:14px}
+    .grid.cat{grid-template-columns:repeat(2,1fr)}
+    @media(min-width:768px){.grid.cat{grid-template-columns:repeat(3,1fr)} }
+    @media(min-width:1024px){.grid.cat{grid-template-columns:repeat(6,1fr)} }
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px}
+    .card.active{ border-color:#4a86ff; box-shadow:0 0 0 2px rgba(74,134,255,0.25) inset }
+    .cat-icon{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:10px}
+    .row{display:flex;gap:10px;align-items:center}
+    .space{height:8px}
+    .requests{display:grid;gap:14px}
+    @media(min-width:768px){.requests{grid-template-columns:repeat(2,1fr)} }
+    .req{border-left:4px solid #ff4b4b}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.06);font-size:12px}
+    .actions{display:flex;gap:10px}
+    .btn-outline{background:transparent;color:#e6eef6;border:1px solid rgba(255,255,255,0.12);border-radius:10px; padding:10px}
+    .success{background:#10b981}
+    .helpers{display:grid;gap:14px}
+    @media(min-width:768px){.helpers{grid-template-columns:repeat(2,1fr)} }
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:1000}
+    .modal .panel{max-width:560px;margin:5% auto;background:linear-gradient(180deg,#14202b,#15232d);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px}
+    .field{margin-bottom:12px}
+    .field label{display:block;margin-bottom:6px;color:#e6eef6;font-weight:600;font-size:14px}
+    .control{width:100%;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#e6eef6}
+    .actions.right{justify-content:flex-end}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script>
+    // Inject current session user from server (lowercased for comparisons)
+    window.currentUser = '<%= user %>';
+    const { useEffect, useState } = React;
+
+    function CategoryCard({ name, color, requests, emoji, active, onSelect }){
+      const bg = {
+        red: 'linear-gradient(135deg,#ff6b6b,#ff9a9e)',
+        orange: 'linear-gradient(135deg,#ffb86b,#ffd18a)',
+        purple: 'linear-gradient(135deg,#7c5cff,#9b8cff)',
+        teal: 'linear-gradient(135deg,#34d399,#60e3b9)',
+        pink: 'linear-gradient(135deg,#ff7ab6,#ffb0df)',
+        indigo: 'linear-gradient(135deg,#7c5cff,#c18bff)'
+      }[color] || 'linear-gradient(135deg,#fff2,#fff1)';
+      return (
+        React.createElement('div', { className: 'card' + (active?' active':''), style:{textAlign:'center',cursor:'pointer'}, onClick:()=>onSelect && onSelect(name) },
+          React.createElement('div', { className: 'cat-icon', style:{ background: bg } }, emoji || '❖'),
+          React.createElement('div', { style:{fontWeight:700} }, name),
+          React.createElement('div', { className:'muted', style:{fontSize:12, marginTop:4} }, requests + ' active requests')
+        )
+      );
+    }
+
+    function RequestCard({ item, currentUser, onVolunteer, onDelete, onViewHelpers }){
+      const variant = item.priorityColor === 'critical' ? { badge:'destructive', border:'#ff4b4b' } : item.priorityColor === 'warning' ? { badge:'warning', border:'#f59e0b' } : { badge:'default', border:'#4a86ff' };
+      const isOwner = item.ownerUsername && currentUser === item.ownerUsername;
+      return (
+        React.createElement('div', { className:'card req', style:{ borderLeftColor: variant.border } },
+          React.createElement('div', { className:'row', style:{ justifyContent:'space-between' } },
+            React.createElement('div', { className:'row' },
+              React.createElement('span', null, '❤️'),
+              React.createElement('span', { style:{fontWeight:600} }, item.category)
+            ),
+            React.createElement('span', { className:'badge', style:{ background: item.priorityColor==='warning'?'#f59e0b22':'rgba(255,255,255,0.06)'} }, item.priority)
+          ),
+          React.createElement('div', { className:'muted', style:{fontSize:12, margin:'8px 0'} }, `${item.priority} · ${item.time}`),
+          React.createElement('div', { style:{fontWeight:700, fontSize:16, marginBottom:6} }, item.title),
+          React.createElement('div', { className:'row muted', style:{fontSize:14, marginBottom:10} }, '📍', item.location),
+          isOwner
+            ? React.createElement('div', { className:'actions' },
+                [
+                  React.createElement('button', { key:'view', className:'btn-outline', onClick:()=>onViewHelpers(item.id) }, 'View Helpers'),
+                  React.createElement('button', { key:'del', className:'btn-outline', onClick:()=>onDelete(item.id) }, '🗑 Delete')
+                ]
+              )
+            : React.createElement('div', { className:'actions' },
+                [
+                  React.createElement('button', { key:'help', className:'btn success', style:{flex:1}, onClick:()=>onVolunteer(item.id) }, 'I Can Help'),
+                  React.createElement('button', { key:'call', className:'btn-outline', title:'Call' }, '📞')
+                ]
+              )
+        )
+      );
+    }
+
+    function HelperCard({ item, onLike, currentUser, onDelete }){
+      const isOwner = (currentUser && item.ownerUsername) ? (String(currentUser).toLowerCase() === String(item.ownerUsername).toLowerCase()) : false;
+      const isAdmin = String(currentUser||'').toLowerCase() === 'admin';
+      return (
+        React.createElement('div', { className:'card', style:{ borderColor:'rgba(16,185,129,0.12)'} },
+          React.createElement('div', { className:'row', style:{ justifyContent:'space-between', marginBottom:10 } },
+            React.createElement('div', null,
+              React.createElement('div', { style:{fontWeight:700, fontSize:16} }, item.name),
+              React.createElement('div', { className:'muted', style:{fontSize:13} }, item.provider)
+            ),
+            React.createElement('div', { className:'row' },
+              React.createElement('span', { style:{fontSize:18} }, '⭐'),
+              React.createElement('span', { style:{fontWeight:700} }, String(item.stars || 0))
+            )
+          ),
+          React.createElement('div', { style:{fontSize:14, marginBottom:6} }, item.description),
+          React.createElement('div', { className:'muted', style:{fontSize:13, marginBottom:12} }, '📞 ', item.contact || '—'),
+          React.createElement('div', { className:'actions' },
+            (isOwner || isAdmin)
+              ? React.createElement('button', { className:'btn', style:{flex:1, background:'#ff4b4b'}, onClick:()=>onDelete(item.id) }, 'Delete')
+              : React.createElement('button', { className:'btn', style:{flex:1}, onClick:()=>alert('Contact: ' + (item.contact||'N/A')) }, 'Contact Helper'),
+            React.createElement('button', { className:'btn-outline', title:'Like', onClick:()=>onLike(item.id) }, '❤️ ', String(item.likes || 0))
+          )
+        )
+      );
+    }
+
+    function Modal({ open, onClose, onSubmit }){
+      const [form, setForm] = useState({ category:'Medical', title:'', description:'', name:'', location:'', urgency:'high', time:'' });
+      if(!open) return null;
+      return (
+        React.createElement('div', { className:'modal', style:{display:'block'} , onClick:(e)=>{ if(e.target===e.currentTarget) onClose(); } },
+          React.createElement('div', { className:'panel' },
+            React.createElement('div', { className:'row', style:{ justifyContent:'space-between', marginBottom:10 } },
+              React.createElement('div', { style:{fontWeight:800, fontSize:18} }, 'Post Help Request'),
+              React.createElement('button', { className:'btn-outline', onClick:onClose }, '✕')
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Category'),
+              React.createElement('select', { className:'control', value:form.category, onChange:e=>setForm({...form, category:e.target.value}) },
+                ['Medical','Food','Jobs','Shelter','Transport','Education'].map(c=>React.createElement('option',{key:c, value:c}, c))
+              )
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Title'),
+              React.createElement('input', { className:'control', value:form.title, onChange:e=>setForm({...form, title:e.target.value}), placeholder:'Short summary' })
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Description'),
+              React.createElement('textarea', { className:'control', value:form.description, onChange:e=>setForm({...form, description:e.target.value}), placeholder:'Provide details' })
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Your Name'),
+              React.createElement('input', { className:'control', value:form.name, onChange:e=>setForm({...form, name:e.target.value}), placeholder:'Enter your name' })
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Location'),
+              React.createElement('input', { className:'control', value:form.location, onChange:e=>setForm({...form, location:e.target.value}), placeholder:'City/Area' })
+            ),
+            React.createElement('div', { className:'row', style:{gap:'12px'} },
+              React.createElement('div', { style:{flex:1} },
+                React.createElement('div', { className:'field' },
+                  React.createElement('label', null, 'Urgency'),
+                  React.createElement('select', { className:'control', value:form.urgency, onChange:e=>setForm({...form, urgency:e.target.value}) },
+                    ['high','medium','low'].map(c=>React.createElement('option',{key:c, value:c}, c))
+                  )
+                )
+              ),
+              React.createElement('div', { style:{flex:1} },
+                React.createElement('div', { className:'field' },
+                  React.createElement('label', null, 'Duration/Timeline'),
+                  React.createElement('input', { className:'control', value:form.time, onChange:e=>setForm({...form, time:e.target.value}), placeholder:'e.g., Immediate, 2 days' })
+                )
+              )
+            ),
+            React.createElement('div', { className:'actions right' },
+              React.createElement('button', { className:'btn-outline', onClick:onClose }, 'Cancel'),
+              React.createElement('button', { className:'btn', onClick:()=>onSubmit(form) }, 'Post Request')
+            )
+          )
+        )
+      );
+    }
+
+    function App(){
+      const [categories, setCategories] = useState([]);
+      const [emergencies, setEmergencies] = useState([]);
+      const [helpers, setHelpers] = useState([]);
+      const [city, setCity] = useState('Delhi');
+      const [open, setOpen] = useState(false);
+      const [openHelper, setOpenHelper] = useState(false);
+      const currentUser = (window.currentUser || '').toLowerCase();
+      const [selectedCategory, setSelectedCategory] = useState(null); // null => all
+
+      useEffect(()=>{
+        fetch('/help-hub/categories').then(r=>r.json()).then(setCategories).catch(()=>{});
+        fetch('/posts').then(r=>r.json()).then(setEmergencies).catch(()=>{});
+        fetch('/help-hub/helpers').then(r=>r.json()).then(setHelpers).catch(()=>{});
+      },[]);
+
+      const postRequest = async (form) => {
+        try{
+          const payload = {
+            category: form.category,
+            title: form.title,
+            description: form.description,
+            name: form.name,
+            location: form.location,
+            urgency: (form.urgency || 'high').toLowerCase(),
+            time: form.time || 'Immediate'
+          };
+          const res = await fetch('/posts',{
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+          });
+          if(!res.ok){ const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed'); return; }
+          const created = await res.json();
+          setEmergencies(prev=>[created, ...prev]);
+          setOpen(false);
+        }catch(e){ alert('Network error'); }
+      };
+
+      const onVolunteer = async (id) => {
+        const contact = prompt('Enter your contact number to share with the requester:');
+        if(!contact) return;
+        try{
+          const res = await fetch(`/posts/${id}/help`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ contact })
+          });
+          if(!res.ok){ const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed'); return; }
+          alert('Your contact has been shared with the requester. Thank you!');
+        }catch(e){ alert('Network error'); }
+      };
+
+      const onDelete = async (id) => {
+        if(!confirm('Delete this request?')) return;
+        try{
+          const res = await fetch(`/posts/${id}`, { method:'DELETE' });
+          if(res.status === 204){
+            setEmergencies(prev => prev.filter(e => e.id !== id && e._id !== id));
+          }else{
+            const err = await res.json().catch(()=>({error:'Failed'}));
+            alert(err.error || 'Failed to delete');
+          }
+        }catch(e){ alert('Network error'); }
+      };
+
+      const onViewHelpers = async (id) => {
+        try{
+          const res = await fetch(`/posts/${id}/helpers`);
+          if(!res.ok){ const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed'); return; }
+          const data = await res.json();
+          const list = (data.helpers||[]).map(h=>`- ${h.username}: ${h.contact}`).join('\n');
+          alert(list || 'No helpers yet');
+        }catch(e){ alert('Network error'); }
+      };
+
+      const onLikeHelper = async (id) => {
+        try{
+          const res = await fetch(`/help-hub/helpers/${id}/like`, { method:'POST' });
+          if(!res.ok){ const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed'); return; }
+          const data = await res.json();
+          setHelpers(prev => prev.map(h => h.id === id ? { ...h, likes: data.likes, stars: data.stars } : h));
+        }catch(e){ alert('Network error'); }
+      };
+
+      const onDeleteHelper = async (id) => {
+        if(!confirm('Delete this helper?')) return;
+        try{
+          const res = await fetch(`/help-hub/helpers/${id}`, { method:'DELETE' });
+          if(res.status === 204){
+            setHelpers(prev => prev.filter(h => h.id !== id));
+          }else{
+            const err = await res.json().catch(()=>({error:'Failed'}));
+            alert(err.error || 'Failed to delete');
+          }
+        }catch(e){ alert('Network error'); }
+      };
+
+      const submitNewHelper = async (form) => {
+        try{
+          const res = await fetch('/help-hub/helpers', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(form)
+          });
+          if(!res.ok){ const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed'); return; }
+          const created = await res.json();
+          setHelpers(prev => [created, ...prev]);
+          setOpenHelper(false);
+        }catch(e){ alert('Network error'); }
+      };
+
+      const emojiMap = { Medical:'🏥', Food:'🍴', Jobs:'💼', Shelter:'🏠', Transport:'🚗', Education:'📚' };
+
+      // derive filtered emergencies (match includes to support seed like "Medical Emergency")
+      // Transform Post docs for rendering (adds priority fields and id alias)
+      const toCard = (p) => {
+        const urgency = String(p.urgency || '').toLowerCase();
+        const priority = urgency ? (urgency.charAt(0).toUpperCase()+urgency.slice(1)) : 'High';
+        const priorityColor = urgency === 'high' ? 'warning' : urgency === 'low' ? 'default' : 'warning';
+        return {
+          id: p._id,
+          category: p.category,
+          priority,
+          time: p.time || 'Just now',
+          title: p.title,
+          location: p.location,
+          priorityColor,
+          ownerUsername: p.ownerUsername
+        };
+      };
+
+      const filteredEmergencies = Array.isArray(emergencies)
+        ? emergencies
+            .filter(e => !selectedCategory || String(e.category||'').toLowerCase() === String(selectedCategory).toLowerCase())
+            .map(toCard)
+        : [];
+
+      return (
+        React.createElement('div', { className:'container' },
+          React.createElement('div', { className:'topbar' },
+            React.createElement('div', null,
+              React.createElement('div', { className:'title' }, 'Help Hub'),
+              React.createElement('div', { className:'muted' }, 'Connect people who need help with those who can help')
+            ),
+            React.createElement('div', { className:'row' },
+              React.createElement('button', { className:'btn-outline', onClick:()=>window.history.back() }, '← Back'),
+              React.createElement('select', { value:city, onChange:e=>setCity(e.target.value) },
+                ['Delhi','Mumbai','Bengaluru'].map(c=>React.createElement('option',{key:c, value:c}, c))
+              ),
+              React.createElement('button', { className:'btn', onClick:()=>setOpen(true) }, 'Post Request')
+            )
+          ),
+
+          React.createElement('div', { className:'grid cat', style:{ marginBottom:18 } },
+            categories.map(c => React.createElement(CategoryCard, {
+              key:c.name,
+              name:c.name,
+              color:c.color,
+              requests:c.requests,
+              emoji:emojiMap[c.name],
+              active: selectedCategory === c.name,
+              onSelect: (name) => setSelectedCategory(prev => prev === name ? null : name)
+            }))
+          ),
+
+          React.createElement('div', { style:{ marginBottom:8, fontWeight:700, fontSize:18 } }, selectedCategory ? `Active Emergency Requests · ${selectedCategory}` : 'Active Emergency Requests'),
+          React.createElement('div', { className:'requests', style:{ marginBottom:20 } },
+            filteredEmergencies.map(item => React.createElement(RequestCard, { key:item.id, item, currentUser, onVolunteer, onDelete, onViewHelpers }))
+          ),
+
+          React.createElement('div', { className:'row', style:{ justifyContent:'space-between', alignItems:'center', marginBottom:8 } },
+            React.createElement('div', { style:{ fontWeight:700, fontSize:18 } }, 'Available Helpers'),
+            React.createElement('button', { className:'btn', onClick:()=>setOpenHelper(true) }, 'Add Helper')
+          ),
+          React.createElement('div', { className:'helpers' },
+            helpers.map(item => React.createElement(HelperCard, { key:item.id, item, onLike: onLikeHelper, currentUser, onDelete: onDeleteHelper }))
+          ),
+
+          React.createElement(Modal, { open, onClose:()=>setOpen(false), onSubmit:postRequest }),
+          React.createElement(NewHelperModal, { open: openHelper, onClose:()=>setOpenHelper(false), onSubmit: submitNewHelper })
+        )
+      );
+    }
+
+    function NewHelperModal({ open, onClose, onSubmit }){
+      const [form, setForm] = useState({ name:'', provider:'', description:'', contact:'' });
+      if(!open) return null;
+      return (
+        React.createElement('div', { className:'modal', style:{display:'block'}, onClick:(e)=>{ if(e.target===e.currentTarget) onClose(); } },
+          React.createElement('div', { className:'panel' },
+            React.createElement('div', { className:'row', style:{ justifyContent:'space-between', marginBottom:10 } },
+              React.createElement('div', { style:{fontWeight:800, fontSize:18} }, 'Add Helper'),
+              React.createElement('button', { className:'btn-outline', onClick:onClose }, '✕')
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Name'),
+              React.createElement('input', { className:'control', value:form.name, onChange:e=>setForm({...form, name:e.target.value}), placeholder:'Service type or helper name' })
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Provider'),
+              React.createElement('input', { className:'control', value:form.provider, onChange:e=>setForm({...form, provider:e.target.value}), placeholder:'e.g., John Doe · City' })
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Description'),
+              React.createElement('input', { className:'control', value:form.description, onChange:e=>setForm({...form, description:e.target.value}), placeholder:'Short description' })
+            ),
+            React.createElement('div', { className:'field' },
+              React.createElement('label', null, 'Contact'),
+              React.createElement('input', { className:'control', value:form.contact, onChange:e=>setForm({...form, contact:e.target.value}), placeholder:'+91-...' })
+            ),
+            React.createElement('div', { className:'actions right' },
+              React.createElement('button', { className:'btn-outline', onClick:onClose }, 'Cancel'),
+              React.createElement('button', { className:'btn', onClick:()=>onSubmit(form) }, 'Add')
+            )
+          )
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>

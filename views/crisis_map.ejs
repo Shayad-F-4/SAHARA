@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sahara — Crisis Map</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    body{margin:0;font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1220;color:#e6eef6}
+    .container{max-width:1200px;margin:0 auto;padding:24px}
+    .row{display:flex;gap:12px;align-items:center}
+    .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .btn{background:#4a86ff;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    select{background:transparent;color:#e6eef6;border:1px solid rgba(255,255,255,0.12);padding:8px 10px;border-radius:8px}
+    /* Make native dropdown options readable on white OS menus */
+    .top select option{ color:#111; background:#fff; }
+    .top select:focus{ outline:none; box-shadow:0 0 0 3px rgba(74,134,255,0.15); }
+    .grid{display:grid;grid-template-columns:1fr 380px;gap:18px;height:calc(100vh - 120px)}
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px;height:100%;overflow:auto}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.06);font-size:12px}
+    .muted{color:#9aa6b3}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:1000}
+    .modal .panel{max-width:560px;margin:5% auto;background:linear-gradient(180deg,#14202b,#15232d);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px}
+    .field{margin-bottom:12px}
+    .field label{display:block;margin-bottom:6px;color:#e6eef6;font-weight:600;font-size:14px}
+    .control{width:100%;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#e6eef6}
+    #map{height:100%;width:100%;border-radius:12px}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    const { useEffect, useState, useRef } = React;
+
+    const crisisTypes = [
+      { type: 'all', label: 'All Types' },
+      { type: 'flood', label: 'Flood' },
+      { type: 'fire', label: 'Fire' },
+      { type: 'earthquake', label: 'Earthquake' },
+      { type: 'storm', label: 'Storm' },
+      { type: 'accident', label: 'Accident' },
+      { type: 'other', label: 'Other' },
+    ];
+
+    function LeafletMap({ crises }){
+      const mapEl = useRef(null);
+      const map = useRef(null);
+      const markers = useRef(null);
+
+      useEffect(() => {
+        if (!mapEl.current || map.current) return;
+        map.current = L.map(mapEl.current).setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+        }).addTo(map.current);
+        markers.current = L.layerGroup().addTo(map.current);
+      }, []);
+
+      useEffect(() => {
+        if (!map.current || !markers.current) return;
+        markers.current.clearLayers();
+        const pts = [];
+        crises.forEach(c => {
+          if (c.latitude != null && c.longitude != null) {
+            const color = ({ critical:'#ef4444', high:'#f59e0b', medium:'#3b82f6', low:'#6b7280' })[c.priority] || '#6b7280';
+            const m = L.circleMarker([c.latitude, c.longitude], { radius:10, fillColor:color, color:'#fff', weight:2, opacity:1, fillOpacity:0.8 });
+            m.bindPopup(`<div><strong>${c.title}</strong><div style='font-size:12px;margin-top:4px'>${c.description}</div><div style='font-size:12px;margin-top:6px'>Type: ${c.crisis_type} · Priority: ${c.priority}<br/>Location: ${c.location}</div></div>`);
+            m.addTo(markers.current);
+            pts.push([c.latitude, c.longitude]);
+          }
+        });
+        if (pts.length) {
+          map.current.fitBounds(L.latLngBounds(pts), { padding:[40,40] });
+        }
+      }, [crises]);
+
+      return React.createElement('div', { id:'map' , ref: mapEl });
+    }
+
+    function App(){
+      const [selectedType, setSelectedType] = useState('all');
+      const [crises, setCrises] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [open, setOpen] = useState(false);
+      const [form, setForm] = useState({ crisis_type:'flood', title:'', description:'', location:'', latitude:'', longitude:'', priority:'medium' });
+
+      const load = (t='all') => {
+        setLoading(true);
+        const all = JSON.parse(localStorage.getItem('crises')||'[]');
+        const data = (t==='all') ? all : all.filter(x => x.crisis_type === t);
+        setCrises(data);
+        setLoading(false);
+      };
+
+      useEffect(()=>{ load('all'); },[]);
+
+      const submit = (e) => {
+        e.preventDefault();
+        const all = JSON.parse(localStorage.getItem('crises')||'[]');
+        const id = Date.now().toString(36);
+        const lat = form.latitude ? parseFloat(form.latitude) : null;
+        const lon = form.longitude ? parseFloat(form.longitude) : null;
+        const item = { id, ...form, latitude: lat, longitude: lon, status:'pending', created_at: new Date().toISOString() };
+        all.unshift(item);
+        localStorage.setItem('crises', JSON.stringify(all));
+        setOpen(false);
+        setForm({ crisis_type:'flood', title:'', description:'', location:'', latitude:'', longitude:'', priority:'medium' });
+        load(selectedType);
+      };
+
+      const getPriorityColor = (p) => ({ critical: '#ff4b4b', high:'#f59e0b', medium:'#4a86ff', low:'#9aa6b3' })[p] || '#9aa6b3';
+
+      return (
+        React.createElement('div', { className:'container' },
+          React.createElement('div', { className:'top' },
+            React.createElement('div', null,
+              React.createElement('div', { style:{fontSize:28,fontWeight:800} }, 'Crisis Map'),
+              React.createElement('div', { className:'muted' }, 'Report and view crisis locations')
+            ),
+            React.createElement('div', { className:'row' },
+              React.createElement('button', { className:'btn', onClick:()=>window.history.back() }, '← Back'),
+              React.createElement('select', { value:selectedType, onChange:e=>{ setSelectedType(e.target.value); load(e.target.value); } },
+                crisisTypes.map(t=>React.createElement('option',{key:t.type, value:t.type}, t.label))
+              ),
+              React.createElement('button', { className:'btn', onClick:()=>setOpen(true) }, 'Report Crisis')
+            )
+          ),
+
+          React.createElement('div', { className:'grid' },
+            React.createElement('div', { className:'panel' },
+              React.createElement(LeafletMap, { crises })
+            ),
+            React.createElement('div', { className:'panel' },
+              React.createElement('div', { style:{marginBottom:12} },
+                React.createElement('div', { style:{fontWeight:700,fontSize:18} }, 'Active Crises'),
+                React.createElement('div', { className:'muted' }, `${crises.length} locations need help`)
+              ),
+              loading
+                ? React.createElement('div', { style:{textAlign:'center',padding:'24px'} }, 'Loading...')
+                : (crises.length===0
+                    ? React.createElement('div', { className:'card', style:{textAlign:'center',padding:'16px'} }, 'No crises reported')
+                    : React.createElement('div', { style:{display:'grid',gap:'12px'} },
+                        crises.map(c => (
+                          React.createElement('div', { key:c.id, className:'card' },
+                            React.createElement('div', { className:'row', style:{justifyContent:'space-between',marginBottom:6} },
+                              React.createElement('div', { className:'row' },
+                                React.createElement('div', { style:{width:10,height:10,borderRadius:999,background:getPriorityColor(c.priority)} }),
+                                React.createElement('div', { style:{textTransform:'capitalize'} }, c.crisis_type)
+                              ),
+                              React.createElement('span', { className:'badge' }, c.priority)
+                            ),
+                            React.createElement('div', { style:{fontWeight:700,marginBottom:6} }, c.title),
+                            React.createElement('div', { className:'muted', style:{fontSize:14,marginBottom:6} }, c.description),
+                            React.createElement('div', { className:'muted', style:{fontSize:14} }, '📍 ', c.location)
+                          )
+                        ))
+                      )
+                  )
+            )
+          ),
+
+          open && React.createElement('div', { className:'modal', style:{display:'block'}, onClick:(e)=>{ if(e.target===e.currentTarget) setOpen(false); } },
+            React.createElement('div', { className:'panel' },
+              React.createElement('div', { className:'row', style:{justifyContent:'space-between',marginBottom:10} },
+                React.createElement('div', { style:{fontWeight:800,fontSize:18} }, 'Report a Crisis'),
+                React.createElement('button', { className:'btn', onClick:()=>setOpen(false) }, '✕')
+              ),
+              React.createElement('form', { onSubmit:submit },
+                React.createElement('div', { className:'field' },
+                  React.createElement('label', null, 'Crisis Type'),
+                  React.createElement('select', { className:'control', value:form.crisis_type, onChange:e=>setForm({...form, crisis_type:e.target.value}) },
+                    crisisTypes.filter(t=>t.type!=='all').map(t=>React.createElement('option',{key:t.type, value:t.type}, t.label))
+                  )
+                ),
+                React.createElement('div', { className:'field' },
+                  React.createElement('label', null, 'Title'),
+                  React.createElement('input', { className:'control', value:form.title, onChange:e=>setForm({...form, title:e.target.value}), required:true })
+                ),
+                React.createElement('div', { className:'field' },
+                  React.createElement('label', null, 'Description'),
+                  React.createElement('textarea', { className:'control', value:form.description, onChange:e=>setForm({...form, description:e.target.value}), required:true })
+                ),
+                React.createElement('div', { className:'field' },
+                  React.createElement('label', null, 'Location (Address/Description)'),
+                  React.createElement('input', { className:'control', value:form.location, onChange:e=>setForm({...form, location:e.target.value}), placeholder:'e.g., 123 Main St, City', required:true })
+                ),
+                React.createElement('div', { className:'row' },
+                  React.createElement('div', { style:{flex:1} },
+                    React.createElement('div', { className:'field' },
+                      React.createElement('label', null, 'Latitude (optional)'),
+                      React.createElement('input', { className:'control', type:'number', step:'any', value:form.latitude, onChange:e=>setForm({...form, latitude:e.target.value}), placeholder:'e.g., 28.6139' })
+                    )
+                  ),
+                  React.createElement('div', { style:{flex:1} },
+                    React.createElement('div', { className:'field' },
+                      React.createElement('label', null, 'Longitude (optional)'),
+                      React.createElement('input', { className:'control', type:'number', step:'any', value:form.longitude, onChange:e=>setForm({...form, longitude:e.target.value}), placeholder:'e.g., 77.2090' })
+                    )
+                  )
+                ),
+                React.createElement('div', { className:'field' },
+                  React.createElement('label', null, 'Priority'),
+                  React.createElement('select', { className:'control', value:form.priority, onChange:e=>setForm({...form, priority:e.target.value}) },
+                    ['low','medium','high','critical'].map(p=>React.createElement('option',{key:p, value:p}, p))
+                  )
+                ),
+                React.createElement('div', null,
+                  React.createElement('button', { className:'btn', type:'submit' }, 'Submit Report')
+                )
+              )
+            )
+          )
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>

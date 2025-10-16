@@ -98,6 +98,11 @@
     .topbar h1{font-size:22px;margin:0}
     .topbar .controls{display:flex;gap:12px;align-items:center}
     .topbar select{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:8px}
+    /* Make native dropdown options readable on white OS menus */
+    .topbar select option{ color:#111; background:#fff; }
+    /* Modal selects: force black text on white option background */
+    select.form-control option{ color:#111; background:#fff; }
+    .topbar select:focus{ outline:none; box-shadow:0 0 0 3px rgba(74,134,255,0.15); }
     .topbar .post-btn{background:var(--brand-blue);color:#fff;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
 
     /* ---------- categories row ---------- */
@@ -419,14 +424,14 @@
         </div>
       </div>
 
-      <div class="emergency">📞 EMERGENCY</div>
+      <div class="emergency" role="button" tabindex="0" onclick="emergencyCall()" onkeypress="if(event.key==='Enter'){emergencyCall()}">📞 EMERGENCY</div>
 
       <nav class="nav" aria-label="Main navigation">
         <a href="#" class="active">🏠 Home</a>
-        <a href="#">🆘 Help Hub</a>
-        <a href="#">🗺 Crisis Map</a>
+        <a href="/help-hub">🆘 Help Hub</a>
+        <a href="/crisis-map">🗺 Crisis Map</a>
         <a href="/skills_connect">🔗 Skill Connect</a>
-        <a href="#">⚙ Settings</a>
+        <a href="/settings">⚙ Settings</a>
       </nav>
 
       <div class="register">
@@ -457,48 +462,43 @@
       <section>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;">
           <div class="categories-row" role="list">
-            <a class="category" role="listitem" href="/help/Medical" style="text-decoration:none;color:inherit">
+            <a class="category" role="listitem" href="#" data-category="Medical" onclick="return filterByCategory('Medical')" style="text-decoration:none;color:inherit">
               <div class="icon" style="background:linear-gradient(135deg,#ff6b6b,#ff9a9e)">🏥</div>
               <h4>Medical</h4>
-              <small>23 active requests</small>
+              <small><span id="cat-Medical">0</span> active requests</small>
             </a>
 
-            <a class="category" role="listitem" href="/help/Food" style="text-decoration:none;color:inherit">
+            <a class="category" role="listitem" href="#" data-category="Food" onclick="return filterByCategory('Food')" style="text-decoration:none;color:inherit">
               <div class="icon" style="background:linear-gradient(135deg,#ffb86b,#ffd18a)">🍴</div>
               <h4>Food</h4>
-              <small>15 active requests</small>
+              <small><span id="cat-Food">0</span> active requests</small>
             </a>
 
-            <a class="category" role="listitem" href="/help/Jobs" style="text-decoration:none;color:inherit">
+            <a class="category" role="listitem" href="#" data-category="Jobs" onclick="return filterByCategory('Jobs')" style="text-decoration:none;color:inherit">
               <div class="icon" style="background:linear-gradient(135deg,#7c5cff,#9b8cff)">💼</div>
               <h4>Jobs</h4>
-              <small>42 active requests</small>
+              <small><span id="cat-Jobs">0</span> active requests</small>
             </a>
 
-            <a class="category" role="listitem" href="/help/Shelter" style="text-decoration:none;color:inherit">
+            <a class="category" role="listitem" href="#" data-category="Shelter" onclick="return filterByCategory('Shelter')" style="text-decoration:none;color:inherit">
               <div class="icon" style="background:linear-gradient(135deg,#34d399,#60e3b9)">🏠</div>
               <h4>Shelter</h4>
-              <small>8 active requests</small>
+              <small><span id="cat-Shelter">0</span> active requests</small>
             </a>
 
-            <a class="category" role="listitem" href="/help/Transport" style="text-decoration:none;color:inherit">
+            <a class="category" role="listitem" href="#" data-category="Transport" onclick="return filterByCategory('Transport')" style="text-decoration:none;color:inherit">
               <div class="icon" style="background:linear-gradient(135deg,#ff7ab6,#ffb0df)">🚗</div>
               <h4>Transport</h4>
-              <small>12 active requests</small>
+              <small><span id="cat-Transport">0</span> active requests</small>
             </a>
 
-            <a class="category" role="listitem" href="/help/Education" style="text-decoration:none;color:inherit">
+            <a class="category" role="listitem" href="#" data-category="Education" onclick="return filterByCategory('Education')" style="text-decoration:none;color:inherit">
               <div class="icon" style="background:linear-gradient(135deg,#7c5cff,#c18bff)">📚</div>
               <h4>Education</h4>
-              <small>19 active requests</small>
+              <small><span id="cat-Education">0</span> active requests</small>
             </a>
           </div>
 
-          <!-- Need Help / Give Help segmented control -->
-          <div class="segmented" role="tablist" aria-label="Need or Give help">
-            <button class="active" aria-pressed="true">Need Help</button>
-            <button class="alt" aria-pressed="false" disabled>Give Help</button>
-          </div>
         </div>
 
         <!-- Requests -->
@@ -509,19 +509,19 @@
       <section class="stats" aria-label="Statistics">
         <div class="stat">
           <div style="font-size:18px;background:rgba(255,255,255,0.02);display:inline-block;padding:10px;border-radius:10px">👥</div>
-          <div class="num">12,547</div>
+          <div class="num" id="stat-active-helpers">0</div>
           <div class="lbl">Active Helpers</div>
         </div>
 
         <div class="stat">
           <div style="font-size:18px;background:rgba(255,255,255,0.02);display:inline-block;padding:10px;border-radius:10px">💚</div>
-          <div class="num">3,892</div>
+          <div class="num" id="stat-lives">0</div>
           <div class="lbl">Lives Saved</div>
         </div>
 
         <div class="stat">
           <div style="font-size:18px;background:rgba(255,255,255,0.02);display:inline-block;padding:10px;border-radius:10px">⏱</div>
-          <div class="num">4.2 min</div>
+          <div class="num"><span id="stat-avg">0.0</span> min</div>
           <div class="lbl">Avg Response Time</div>
         </div>
 
@@ -606,6 +606,10 @@
 
   <script>
     function openHelpModal() {
+      if (!window.currentUser) {
+        window.location.href = '/login';
+        return;
+      }
       document.getElementById('helpModal').style.display = 'block';
     }
 
@@ -622,23 +626,95 @@
       }
     }
 
-    // On page load, fetch all posts and show them (newest first)
+    // On page load, fetch posts (optionally filtered)
     document.addEventListener('DOMContentLoaded', async function() {
       window.currentUser = '<%= user %>';
+      loadPosts();
+      loadStats();
+      setInterval(loadStats, 120000);
+      // Double-click any category to clear filter
+      document.querySelectorAll('.category').forEach(el => {
+        el.addEventListener('dblclick', function(ev){
+          ev.preventDefault();
+          currentCategory = null;
+          loadPosts(null);
+        });
+      });
+    });
+
+    async function emergencyCall() {
       try {
-        const res = await fetch('/posts', { credentials: 'same-origin' });
-        if (!res.ok) return; // stay silent on error
+        const res = await fetch('/api/me/emergency', { credentials: 'same-origin' });
+        const data = res.ok ? await res.json() : { emergency_number: '' };
+        let raw = String(data.emergency_number || '').trim();
+        if (!raw) {
+          if (confirm('No emergency number saved. Go to Settings to add one now?')) {
+            window.location.href = '/settings';
+          }
+          return;
+        }
+        // normalize: keep + and digits only
+        let normalized = raw.replace(/[^+\d]/g, '');
+        if (normalized.startsWith('00')) normalized = '+' + normalized.slice(2);
+        const a = document.createElement('a');
+        a.href = 'tel:' + normalized;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {
+        alert('Unable to start a call from the browser. Please check your number in Settings.');
+      }
+    }
+
+    let currentCategory = null;
+    async function loadPosts(category){
+      currentCategory = category || null;
+      const qs = currentCategory ? ('?category=' + encodeURIComponent(currentCategory)) : '';
+      try{
+        const res = await fetch('/posts' + qs, { credentials: 'same-origin' });
+        if(!res.ok) return;
         const posts = await res.json();
         const container = document.getElementById('requestsContainer');
-        if (Array.isArray(posts) && posts.length > 0) {
+        if(Array.isArray(posts) && posts.length > 0){
           container.innerHTML = posts.map(p => createHelpRequestCard(p)).join('');
-        } else {
+        }else{
           container.innerHTML = '';
         }
-      } catch (e) {
-        // ignore network errors for initial load
+      }catch(e){ /* ignore */ }
+    }
+
+    function filterByCategory(cat){
+      // Toggle: clicking the same category again clears the filter
+      if (currentCategory === cat) {
+        currentCategory = null;
+        loadPosts(null);
+      } else {
+        loadPosts(cat);
       }
-    });
+      return false; // prevent navigation
+    }
+
+    async function loadStats(){
+      try{
+        const res = await fetch('/api/stats', { credentials:'same-origin' });
+        if(!res.ok) return;
+        const data = await res.json();
+        const cats = data.categories || {};
+        const mapIds = ['Medical','Food','Jobs','Shelter','Transport','Education'];
+        mapIds.forEach(c => {
+          const el = document.getElementById('cat-' + c);
+          if(el) el.textContent = Number(cats[c]||0);
+        });
+        const totals = data.totals || {};
+        const ah = document.getElementById('stat-active-helpers');
+        if(ah) ah.textContent = Number(totals.activeHelpers||0).toLocaleString();
+        const ls = document.getElementById('stat-lives');
+        if(ls) ls.textContent = Number(totals.livesSaved||0).toLocaleString();
+        const avg = document.getElementById('stat-avg');
+        if(avg) avg.textContent = (Number(totals.avgResponseMinutes||0)).toFixed(1);
+      }catch(e){ /* ignore */ }
+    }
 
     // Handle form submission -> call backend then render only the created post
     document.getElementById('helpRequestForm').addEventListener('submit', async function(e) {
@@ -661,6 +737,11 @@
           body: JSON.stringify(payload),
           credentials: 'same-origin'
         });
+        if (res.status === 401) {
+          alert('Please login to post a help request.');
+          window.location.href = '/login';
+          return;
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: 'Failed to create' }));
           alert(err.error || 'Failed to create post');

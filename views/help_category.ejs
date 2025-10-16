@@ -41,7 +41,7 @@
 
   <script>
     const category = '<%= category %>';
-    window.currentUser = '<%= (user||'').toString() %>';
+    window.currentUser = '<%= (user||"").toString() %>';
 
     document.addEventListener('DOMContentLoaded', load);
 
@@ -68,15 +68,15 @@
           <h3 style="margin:0">${p.title}</h3>
           <div style="color:var(--muted)">${p.description||''}</div>
           <div class="actions">
-            <button class="btn btn-help" onclick="volunteer('${p._id}')">I Can Help</button>
-            ${me && owner && me===owner ? `<button class="btn btn-del" onclick="delPost('${p._id}')">Delete</button>` : ''}
+            ${me && owner && me===owner ? '' : `<button class="btn btn-help" onclick=\"volunteer('${p._id}')\">I Can Help</button>`}
+            ${me && owner && me===owner ? `<button class="btn btn-del" onclick=\"delPost('${p._id}')\">Delete</button>` : ''}
           </div>
         </article>
       `;
     }
 
     async function volunteer(id){
-      const contact = prompt('Enter your contact number to share with the requester:');
+      const contact = prompt('Enter your contact (phone/email/other) to share with the requester:');
       if(!contact) return;
       try{
         const res = await fetch('/posts/' + id + '/help', {

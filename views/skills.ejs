@@ -427,26 +427,27 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="header-content">
-                <h1>Skill Connect</h1>
-                <p>Connect with local skilled workers and find opportunities</p>
-            </div>
-            <div class="header-actions">
-                <select class="select">
-                    <option>Delhi</option>
-                    <option>Mumbai</option>
-                    <option>Bangalore</option>
-                    <option>Chennai</option>
-                </select>
-                <button class="btn btn-primary" onclick="openModal('servicesModal')">
-                    <span>+</span>
-                    Post Services
-                </button>
-                <button class="btn btn-outline" onclick="openModal('jobModal')">
-                    <span>+</span>
-                    Post Job Request
-                </button>
-            </div>
+          <div class="header-content">
+            <h1>Skill Connect</h1>
+            <p>Connect with local skilled workers and find opportunities</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-outline" title="Go Back" onclick="(history.length>1)?history.back():window.location.assign('/')">← Back</button>
+            <select class="select">
+              <option>Delhi</option>
+              <option>Mumbai</option>
+              <option>Bangalore</option>
+              <option>Chennai</option>
+            </select>
+            <button class="btn btn-primary" onclick="openModal('servicesModal')">
+              <span>+</span>
+              Post Services
+            </button>
+            <button class="btn btn-outline" onclick="openModal('jobModal')">
+              <span>+</span>
+              Post Job Request
+            </button>
+          </div>
         </div>
 
         <!-- Categories -->
@@ -454,43 +455,46 @@
             <div class="category-card" role="button" tabindex="0" data-category="Construction" onclick="filterCategory('Construction')">
                 <div class="category-icon construction">🏗️</div>
                 <h3>Construction</h3>
-                <p style="font-size: 0.75rem; color: #94a3b8;">67 workers</p>
+                <p style="font-size: 0.75rem; color: #94a3b8;"> <span id="cat-Construction">0</span> workers</p>
             </div>
             <div class="category-card" role="button" tabindex="0" data-category="Plumbing" onclick="filterCategory('Plumbing')">
                 <div class="category-icon plumbing">🔧</div>
                 <h3>Plumbing</h3>
-                <p style="font-size: 0.75rem; color: #94a3b8;">45 plumbers</p>
+                <p style="font-size: 0.75rem; color: #94a3b8;"> <span id="cat-Plumbing">0</span> workers</p>
             </div>
             <div class="category-card" role="button" tabindex="0" data-category="Electrical" onclick="filterCategory('Electrical')">
                 <div class="category-icon electrical">⚡</div>
                 <h3>Electrical</h3>
-                <p style="font-size: 0.75rem; color: #94a3b8;">38 electricians</p>
+                <p style="font-size: 0.75rem; color: #94a3b8;"> <span id="cat-Electrical">0</span> workers</p>
             </div>
             <div class="category-card" role="button" tabindex="0" data-category="Carpentry" onclick="filterCategory('Carpentry')">
                 <div class="category-icon carpentry">🪚</div>
                 <h3>Carpentry</h3>
-                <p style="font-size: 0.75rem; color: #94a3b8;">29 carpenters</p>
+                <p style="font-size: 0.75rem; color: #94a3b8;"> <span id="cat-Carpentry">0</span> workers</p>
             </div>
             <div class="category-card" role="button" tabindex="0" data-category="Painting" onclick="filterCategory('Painting')">
                 <div class="category-icon painting">🎨</div>
                 <h3>Painting</h3>
-                <p style="font-size: 0.75rem; color: #94a3b8;">22 painters</p>
+                <p style="font-size: 0.75rem; color: #94a3b8;"> <span id="cat-Painting">0</span> workers</p>
             </div>
             <div class="category-card" role="button" tabindex="0" data-category="Cleaning" onclick="filterCategory('Cleaning')">
                 <div class="category-icon cleaning">🧹</div>
                 <h3>Cleaning</h3>
-                <p style="font-size: 0.75rem; color: #94a3b8;">31 cleaners</p>
+                <p style="font-size: 0.75rem; color: #94a3b8;"> <span id="cat-Cleaning">0</span> workers</p>
             </div>
         </div>
 
         <!-- Action Tabs -->
         <div class="action-tabs">
-            <button class="tab-btn active">Need Worker (67)</button>
-            <button class="tab-btn inactive">Available Workers (124)</button>
+            <button class="tab-btn active">Need Worker (<span id="tab-jobs-count">0</span>)</button>
+            <button class="tab-btn inactive">Available Workers (<span id="tab-services-count">0</span>)</button>
         </div>
 
-        <!-- Job Requests -->
-        <div class="content-grid">
+        <!-- Dynamic content from backend (Jobs + Services) -->
+        <div id="dynContent" class="content-grid"></div>
+
+        <!-- Job Requests (static demo hidden) -->
+        <div class="content-grid" style="display:none">
             <div class="card" data-category="Construction">
                 <div class="card-header">
                     <div class="category-badge urgency-high">
@@ -665,19 +669,19 @@
             <h2 class="stats-title">Platform Statistics</h2>
             <div class="stats-grid">
                 <div class="stat-item">
-                    <div class="stat-number">8,234</div>
+                    <div class="stat-number" id="sk-stat-workers">0</div>
                     <div class="stat-label">Active Skilled Workers</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">5,647</div>
+                    <div class="stat-number" id="sk-stat-completed">0</div>
                     <div class="stat-label">Jobs Completed</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">2.8 min</div>
+                    <div class="stat-number"><span id="sk-stat-avg">0.0</span> min</div>
                     <div class="stat-label">Avg Response Time</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">89</div>
+                    <div class="stat-number" id="sk-stat-cities">0</div>
                     <div class="stat-label">Cities Covered</div>
                 </div>
             </div>
@@ -814,7 +818,17 @@
         </div>
     </div>
 
+    <!-- Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('detailsModal')">&times;</span>
+            <h2 id="detailsTitle">Details</h2>
+            <div id="detailsBody" class="card-info"></div>
+        </div>
+    </div>
+
     <script>
+        window.currentUser = '<%= (user||"\u0000").toString().replace("\u0000", "") %>';
         // Modal functions
         function openModal(modalId) {
             document.getElementById(modalId).style.display = 'block';
@@ -856,6 +870,192 @@
                     el.classList.remove('active');
                 }
             });
+
+        // ================= Backend wiring =================
+        document.addEventListener('DOMContentLoaded', initSkills);
+
+        async function initSkills(){
+            await loadSkillsData();
+        }
+
+        async function loadSkillsData(){
+            try{
+                const [jobsRes, servicesRes] = await Promise.all([
+                    fetch('/skills/jobs', { credentials:'same-origin' }),
+                    fetch('/skills/services', { credentials:'same-origin' })
+                ]);
+                const jobs = jobsRes.ok ? await jobsRes.json() : [];
+                const services = servicesRes.ok ? await servicesRes.json() : [];
+                const wrap = document.getElementById('dynContent');
+                wrap.innerHTML = '';
+                jobs.forEach(j => wrap.insertAdjacentHTML('beforeend', renderJobCard(j)));
+                services.forEach(s => wrap.insertAdjacentHTML('beforeend', renderServiceCard(s)));
+
+                // Update tab totals
+                const tabJobs = document.getElementById('tab-jobs-count');
+                if (tabJobs) tabJobs.textContent = (jobs.length||0).toString();
+                const tabServices = document.getElementById('tab-services-count');
+                if (tabServices) tabServices.textContent = (services.length||0).toString();
+
+                // Compute per-category worker counts from services
+                const cats = ['Construction','Plumbing','Electrical','Carpentry','Painting','Cleaning'];
+                const counts = Object.fromEntries(cats.map(c=>[c,0]));
+                const norm = (v)=>{
+                    const s = String(v||'');
+                    return s.replace(/^[^A-Za-z0-9]+\s*/, '').trim();
+                };
+                services.forEach(s=>{
+                    const c = norm(s.category);
+                    if (counts[c] !== undefined) counts[c]++;
+                });
+                cats.forEach(c=>{
+                    const el = document.getElementById('cat-' + c);
+                    if (el) el.textContent = counts[c] || 0;
+                });
+            }catch(e){ /* ignore */ }
+        }
+
+        function isOwner(owner){
+            const me = (window.currentUser||'').toLowerCase();
+            return me && owner && me === String(owner).toLowerCase();
+        }
+
+        function escapeHtml(str){
+            return String(str||'').replace(/[&<>"]+/g, s=>({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'
+            })[s]||s);
+        }
+
+        function timeAgo(date){
+            const diff = Math.floor((Date.now()-date.getTime())/1000);
+            if(diff<60) return diff+"s ago";
+            const m=Math.floor(diff/60); if(m<60) return m+" min ago";
+            const h=Math.floor(m/60); return h+" hr ago";
+        }
+
+        function renderJobCard(j){
+            const owner = j.ownerUsername;
+            const canHelp = !isOwner(owner);
+            return `
+            <div class="card" data-type="job" data-id="${j._id}">
+                <div class="card-header">
+                    <div class="category-badge ${escapeHtml(j.urgency||'urgency-medium')}"> ${escapeHtml(j.category||'')} </div>
+                    <div class="time-posted">${timeAgo(new Date(j.createdAt||Date.now()))}</div>
+                </div>
+                <h3 class="job-title">${escapeHtml(j.title||'')}</h3>
+                <p style="margin: 0.5rem 0; color: #cbd5e1;">${escapeHtml(j.description||'')}</p>
+                <div class="card-info">
+                    <div class="info-item"><span>👤</span><span>${escapeHtml(j.employer||'')}</span></div>
+                    <div class="info-item"><span>📍</span><span>${escapeHtml(j.location||'')}</span></div>
+                    <div class="info-item"><span>⏱️</span><span>${escapeHtml(j.duration||'')}</span></div>
+                    <div class="info-item"><span>💰</span><span>₹${Number(j.budget||0)}</span></div>
+                </div>
+                <div class="card-actions">
+                    ${canHelp ? `<button class="btn btn-primary btn-small" onclick="helpJob('${j._id}')">I Can Help</button>` : ''}
+                    <button class="btn btn-outline btn-small" onclick="viewJobDetails('${j._id}')">View Details</button>
+                    ${isOwner(owner) ? `<button class="btn btn-outline btn-small" onclick="deleteJob('${j._id}')">Delete</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function renderServiceCard(s){
+            const owner = s.ownerUsername;
+            const canHelp = !isOwner(owner);
+            const skills = Array.isArray(s.skills)? s.skills.join(', ') : '';
+            return `
+            <div class="card" data-type="service" data-id="${s._id}">
+                <div class="card-header">
+                    <div class="category-badge urgency-medium"> ${escapeHtml(s.category||'')} </div>
+                    <div class="time-posted">${timeAgo(new Date(s.createdAt||Date.now()))}</div>
+                </div>
+                <h3 class="worker-name">${escapeHtml(s.workerName||'')}</h3>
+                <div class="card-info">
+                    <div class="info-item"><span>📍</span><span>${escapeHtml(s.location||'')}</span></div>
+                    <div class="info-item"><span>🛠️</span><span>${escapeHtml(skills)}</span></div>
+                    <div class="info-item"><span>💼</span><span>${Number(s.experience||0)} yrs</span></div>
+                    <div class="info-item"><span>💰</span><span>₹${Number(s.rate||0)}/day</span></div>
+                </div>
+                <div class="card-actions">
+                    ${canHelp ? `<button class="btn btn-primary btn-small" onclick="helpService('${s._id}')">I Can Help</button>` : ''}
+                    <button class="btn btn-outline btn-small" onclick="viewServiceDetails('${s._id}')">View Details</button>
+                    ${isOwner(owner) ? `<button class="btn btn-outline btn-small" onclick="deleteService('${s._id}')">Delete</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        async function viewJobDetails(id){
+            try{
+                const res = await fetch('/skills/jobs/'+id, { credentials:'same-origin' });
+                if(!res.ok) return;
+                const data = await res.json();
+                const o = data.owner || {};
+                document.getElementById('detailsTitle').textContent = 'Job Details';
+                document.getElementById('detailsBody').innerHTML = `
+                    <div class="info-item"><span>👤</span><span>${escapeHtml(o.name||'')}</span></div>
+                    <div class="info-item"><span>📧</span><span>${escapeHtml(o.email||'')}</span></div>
+                    <div class="info-item"><span>📞</span><span>${escapeHtml(o.phone||'')}</span></div>
+                    <div class="info-item"><span>📝</span><span>${escapeHtml(o.bio||'')}</span></div>
+                    ${o.resume? `<div class="info-item"><span>📄</span><a href="${o.resume}" target="_blank">View Resume</a></div>`:''}
+                `;
+                openModal('detailsModal');
+            }catch(e){ /* ignore */ }
+        }
+
+        async function viewServiceDetails(id){
+            try{
+                const res = await fetch('/skills/services/'+id, { credentials:'same-origin' });
+                if(!res.ok) return;
+                const data = await res.json();
+                const o = data.owner || {};
+                document.getElementById('detailsTitle').textContent = 'Service Details';
+                document.getElementById('detailsBody').innerHTML = `
+                    <div class="info-item"><span>👤</span><span>${escapeHtml(o.name||'')}</span></div>
+                    <div class="info-item"><span>📧</span><span>${escapeHtml(o.email||'')}</span></div>
+                    <div class="info-item"><span>📞</span><span>${escapeHtml(o.phone||'')}</span></div>
+                    <div class="info-item"><span>📝</span><span>${escapeHtml(o.bio||'')}</span></div>
+                    ${o.resume? `<div class="info-item"><span>📄</span><a href="${o.resume}" target="_blank">View Resume</a></div>`:''}
+                `;
+                openModal('detailsModal');
+            }catch(e){ /* ignore */ }
+        }
+
+        async function helpJob(id){
+            const contact = prompt('Enter your contact (phone/email/other) to share with the poster:');
+            if(!contact) return;
+            try{
+                const res = await fetch('/skills/jobs/'+id+'/help', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify({ contact }) });
+                if(!res.ok){ const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed'); return; }
+                alert('Your contact has been shared. Thank you!');
+            }catch(e){ alert('Network error'); }
+        }
+
+        async function helpService(id){
+            const contact = prompt('Enter your contact (phone/email/other) to share with the poster:');
+            if(!contact) return;
+            try{
+                const res = await fetch('/skills/services/'+id+'/help', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify({ contact }) });
+                if(!res.ok){ const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed'); return; }
+                alert('Your contact has been shared. Thank you!');
+            }catch(e){ alert('Network error'); }
+        }
+
+        async function deleteJob(id){
+            if(!confirm('Delete this job post?')) return;
+            try{
+                const res = await fetch('/skills/jobs/'+id, { method:'DELETE', credentials:'same-origin' });
+                if(res.status===204){ const el=document.querySelector(`[data-type="job"][data-id="${id}"]`); if(el&&el.parentNode) el.parentNode.removeChild(el); }
+                else { const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed to delete'); }
+            }catch(e){ alert('Network error'); }
+        }
+
+        async function deleteService(id){
+            if(!confirm('Delete this service post?')) return;
+            try{
+                const res = await fetch('/skills/services/'+id, { method:'DELETE', credentials:'same-origin' });
+                if(res.status===204){ const el=document.querySelector(`[data-type="service"][data-id="${id}"]`); if(el&&el.parentNode) el.parentNode.removeChild(el); }
+                else { const err = await res.json().catch(()=>({error:'Failed'})); alert(err.error||'Failed to delete'); }
+            }catch(e){ alert('Network error'); }
+        }
 
             // Show only matching job cards
             const jobCards = document.querySelectorAll('.content-grid .card');
@@ -912,7 +1112,6 @@
                     </div>
 
                     <div class="card-actions">
-                        <button class="btn btn-primary btn-small">Hire Now</button>
                         <button class="btn btn-outline btn-small">View Profile</button>
                     </div>
                 </div>
@@ -971,7 +1170,6 @@
                     </div>
 
                     <div class="card-actions">
-                        <button class="btn btn-primary btn-small">I Can Help</button>
                         <button class="btn btn-outline btn-small">View Details</button>
                     </div>
                 </div>

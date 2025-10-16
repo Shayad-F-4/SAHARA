@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings | Sahara</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: #14202b;
+      --panel-2: #15232d;
+      --muted: #9aa6b3;
+      --text: #e6eef6;
+      --brand-blue: #4a86ff;
+      --danger: #ff4b4b;
+      --glass: rgba(255,255,255,0.03);
+    }
+    body{background:var(--bg);color:var(--text);font-family: "Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+    .layout{display:flex;min-height:100vh;gap:24px;padding:20px}
+    .sidebar{width:260px;background:linear-gradient(180deg,var(--panel),var(--panel-2));border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:20px;box-shadow:0 6px 24px rgba(2,6,23,0.6)}
+    .logo{display:flex;gap:12px;align-items:center}
+    .logo .mark{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#ff8a3d,#ff5a8a);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+    .nav a{display:block;color:var(--muted);text-decoration:none;padding:10px;border-radius:8px;margin:6px 0}
+    .nav a.active, .nav a:hover{background:rgba(255,255,255,0.02);color:var(--text)}
+    .main{flex:1;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:linear-gradient(180deg,var(--panel-2),var(--panel));border-radius:12px}
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;box-shadow:0 6px 20px rgba(2,6,23,0.35)}
+    .btn{background:var(--brand-blue);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .btn:hover{filter:brightness(1.05)}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .danger{background:var(--danger)}
+    label{color:var(--text)}
+    input, textarea, select{width:100%;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--text)}
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="mark">S</div>
+        <div>
+          <h3 style="margin:0">Sahara</h3>
+          <small class="muted">Crisis Network Platform</small>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/" >🏠 Home</a>
+        <a href="/help-hub">🆘 Help Hub</a>
+        <a href="/crisis-map">🗺 Crisis Map</a>
+        <a href="/skills_connect">🔗 Skill Connect</a>
+        <a href="/settings" class="active">⚙ Settings</a>
+      </nav>
+      <div class="panel">
+        <div style="color:var(--muted);font-weight:600">Join as Volunteer</div>
+        <form action="/logout" method="POST" style="margin-top:10px">
+          <button class="btn danger" style="width:100%">Logout</button>
+        </form>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <h1 style="margin:0;font-size:22px">Settings</h1>
+        <span class="muted">Manage your information and preferences</span>
+      </header>
+
+      <!-- Profile Settings -->
+      <div class="panel">
+        <h2 style="font-size:18px;margin-bottom:10px">👤 Profile Settings</h2>
+
+      <form action="/update-profile" method="POST" enctype="multipart/form-data" class="space-y-4">
+        <!-- Profile Picture -->
+        <div class="row" style="display:flex;gap:16px;align-items:center;margin-bottom:10px">
+          <img src="<%= (user && user.profile_pic) ? user.profile_pic : '/images/default-avatar.png' %>" alt="Profile Picture" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.1)" />
+          <div style="flex:1">
+            <label>Upload New Picture</label>
+            <input type="file" name="profile_pic" accept="image/*" />
+          </div>
+        </div>
+
+        <div>
+          <label>Full Name</label>
+          <input type="text" name="full_name" value="<%= (user && user.full_name) || '' %>" required />
+        </div>
+
+        <div>
+          <label>Email</label>
+          <input type="email" value="<%= (user && user.email) || '' %>" disabled />
+        </div>
+
+        <div>
+          <label>Phone</label>
+          <input type="text" name="phone" value="<%= (user && user.phone) || '' %>" />
+        </div>
+
+        <div>
+          <label>Emergency Number</label>
+          <input type="tel" name="emergency_number" placeholder="e.g., +91-98765-43210" value="<%= (user && user.emergency_number) || '' %>" />
+          <div class="muted" style="font-size:12px;margin-top:6px">Used by the Emergency Call button on Home.</div>
+        </div>
+
+        <div>
+          <label>Location</label>
+          <input type="text" name="location" value="<%= (user && user.location) || '' %>" />
+        </div>
+
+        <div>
+          <label>Bio</label>
+          <textarea name="bio" rows="3"><%= (user && user.bio) || '' %></textarea>
+        </div>
+
+        <!-- Resume Upload -->
+        <div>
+          <label>Resume (PDF)</label>
+          <% if (user && user.resume) { %>
+            <div style="margin:6px 0"><a href="<%= user.resume %>" target="_blank" style="color:#7db4ff;text-decoration:underline">View Current Resume</a></div>
+          <% } else { %>
+            <div class="muted" style="font-size:13px">No resume uploaded yet.</div>
+          <% } %>
+          <input type="file" name="resume" accept=".pdf" />
+        </div>
+
+        <button type="submit" class="btn">Save Profile</button>
+      </form>
+    </div>
+
+    <!-- Notification Preferences -->
+    <div class="panel">
+      <h2 style="font-size:18px;margin-bottom:10px">🔔 Notifications</h2>
+      <form action="/update-notifications" method="POST" class="space-y-3">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span>Emergency Alerts</span>
+          <input type="checkbox" name="emergency_alerts" <%= (user && user.emergency_alerts) ? 'checked' : '' %> />
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span>Email Notifications</span>
+          <input type="checkbox" name="email_notifications" <%= (user && user.email_notifications) ? 'checked' : '' %> />
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span>SMS Alerts</span>
+          <input type="checkbox" name="sms_notifications" <%= (user && user.sms_notifications) ? 'checked' : '' %> />
+        </div>
+        <button type="submit" class="btn">Save Preferences</button>
+      </form>
+    </div>
+
+    <!-- Security Section -->
+    <div class="panel">
+      <h2 style="font-size:18px;margin-bottom:10px">🔐 Security</h2>
+      <form action="/change-password" method="POST" class="space-y-3">
+        <div>
+          <label>Current Password</label>
+          <input type="password" name="current_password" required />
+        </div>
+        <div>
+          <label>New Password</label>
+          <input type="password" name="new_password" required />
+        </div>
+        <button type="submit" class="btn" style="background:#f59e0b;color:#111">Update Password</button>
+      </form>
+    </div>
+
+    <!-- About Section (Admin Info) -->
+    <div class="panel">
+      <h2 style="font-size:18px;margin-bottom:10px">ℹ About</h2>
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px">
+        <div style="width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#ff8a3d,#ff5a8a);display:flex;align-items:center;justify-content:center;font-weight:800">A</div>
+        <div>
+          <div style="font-weight:700">Admin • Sahara</div>
+          <div class="muted" style="font-size:13px">Building a resilient crisis network</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:10px">
+        <div>
+          <div class="muted" style="font-size:12px">Email</div>
+          <div>admin@sahara.org</div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px">Phone</div>
+          <div>+91-90000-00000</div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px">Website</div>
+          <div><a href="#" style="color:#7db4ff;text-decoration:underline">https://sahara.org</a></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px">Location</div>
+          <div>India</div>
+        </div>
+      </div>
+      <div class="muted" style="font-size:14px">Sahara is a humanitarian platform connecting people in crisis with verified help. We focus on speed, safety, and reliability.</div>
+    </div>
+
+    </main>
+  </div>
+</body>
+</html>
