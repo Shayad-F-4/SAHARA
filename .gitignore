@@ -1,5 +1,17 @@
-#Node modules
+﻿# dependencies
 node_modules/
+npm-debug.log*
 
-#Environmet variables
+# env and secrets
 .env
+*.env
+
+# uploads and builds
+uploads/
+dist/
+build/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

@@ -1008,12 +1008,15 @@
                 const data = await res.json();
                 const o = data.owner || {};
                 document.getElementById('detailsTitle').textContent = 'Service Details';
+                const resumeLink = o.resume ? `<div class="info-item"><span>📄</span><a href="${o.resume}" target="_blank" download>Download Resume</a></div>` : '';
+                const exportBtn = `<div class="info-item"><button class="btn btn-outline btn-small" onclick="downloadVCard({name: '${(o.name||'').replace(/'/g,"&#39;")}', email: '${(o.email||'').replace(/'/g,"&#39;")}', phone: '${(o.phone||'').replace(/'/g,"&#39;")}', bio: '${(o.bio||'').replace(/'/g,"&#39;")}'})">Export vCard</button></div>`;
                 document.getElementById('detailsBody').innerHTML = `
                     <div class="info-item"><span>👤</span><span>${escapeHtml(o.name||'')}</span></div>
                     <div class="info-item"><span>📧</span><span>${escapeHtml(o.email||'')}</span></div>
                     <div class="info-item"><span>📞</span><span>${escapeHtml(o.phone||'')}</span></div>
                     <div class="info-item"><span>📝</span><span>${escapeHtml(o.bio||'')}</span></div>
-                    ${o.resume? `<div class="info-item"><span>📄</span><a href="${o.resume}" target="_blank">View Resume</a></div>`:''}
+                    ${resumeLink}
+                    ${exportBtn}
                 `;
                 openModal('detailsModal');
             }catch(e){ /* ignore */ }
@@ -1065,126 +1068,80 @@
             });
         }
 
-        // Handle Services Form Submission
-        document.getElementById('servicesForm').addEventListener('submit', function(e) {
+        // Handle Services Form Submission -> persist to backend, then reload
+        document.getElementById('servicesForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const formData = new FormData(e.target);
-            const skills = formData.get('workerSkills').split(',').map(skill => skill.trim());
-            
-            const workerCard = `
-                <div class="card">
-                    <div class="card-header">
-                        <div class="category-badge urgency-medium">
-                            ${formData.get('workerCategory')}
-                        </div>
-                        <div class="time-posted">${generateTimeAgo()}</div>
-                    </div>
-                    <h3 class="worker-name">${formData.get('workerName')}</h3>
-                    <div class="rating">
-                        <span class="stars">★★★★★</span>
-                        <span>${generateRating()}</span>
-                        <span style="color: #94a3b8;">(New)</span>
-                    </div>
-                    <p style="margin: 0.5rem 0; color: #cbd5e1;">${formData.get('workerDescription')}</p>
-                    
-                    <div class="card-info">
-                        <div class="info-item">
-                            <span>📍</span>
-                            <span>${formData.get('workerLocation')}</span>
-                        </div>
-                        <div class="info-item">
-                            <span>💼</span>
-                            <span>${formData.get('workerExperience')} years experience</span>
-                        </div>
-                        <div class="info-item">
-                            <span>💰</span>
-                            <span>₹${formData.get('workerRate')}/day</span>
-                        </div>
-                        <div class="info-item">
-                            <span>📞</span>
-                            <span>Available for contact</span>
-                        </div>
-                    </div>
-
-                    <div class="skills">
-                        ${skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
-                    </div>
-
-                    <div class="card-actions">
-                        <button class="btn btn-outline btn-small">View Profile</button>
-                    </div>
-                </div>
-            `;
-            
-            document.querySelector('.content-grid').insertAdjacentHTML('afterbegin', workerCard);
-            closeModal('servicesModal');
-            
-            // Update worker count in tab
-            const workerTab = document.querySelector('.tab-btn.inactive');
-            if (workerTab) {
-                const currentCount = parseInt(workerTab.textContent.match(/\d+/)[0]);
-                workerTab.textContent = `Available Workers (${currentCount + 1})`;
+            const payload = {
+                workerName: formData.get('workerName'),
+                category: formData.get('workerCategory'),
+                location: formData.get('workerLocation'),
+                experience: Number(formData.get('workerExperience')),
+                rate: Number(formData.get('workerRate')),
+                skills: String(formData.get('workerSkills')||'').split(',').map(s=>s.trim()).filter(Boolean),
+                description: formData.get('workerDescription')
+            };
+            try{
+                const res = await fetch('/skills/services', {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json' },
+                    credentials:'same-origin',
+                    body: JSON.stringify(payload)
+                });
+                if(res.status === 401){
+                    alert('Please login to post your services.');
+                    window.location.href = '/login';
+                    return;
+                }
+                if(!res.ok){
+                    const err = await res.json().catch(()=>({error:'Failed to create'}));
+                    alert(err.error||'Failed to create');
+                    return;
+                }
+                closeModal('servicesModal');
+                await loadSkillsData();
+            }catch(err){
+                alert('Network error');
             }
         });
 
-        // Handle Job Request Form Submission
-        document.getElementById('jobForm').addEventListener('submit', function(e) {
+        // Handle Job Request Form Submission -> optional: persist, then reload
+        document.getElementById('jobForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const formData = new FormData(e.target);
-            const requirements = formData.get('jobRequirements').split(',').map(req => req.trim());
-            
-            const jobCard = `
-                <div class="card">
-                    <div class="card-header">
-                        <div class="category-badge ${formData.get('jobUrgency')}">
-                            ${formData.get('jobCategory')}
-                        </div>
-                        <div class="time-posted">${generateTimeAgo()}</div>
-                    </div>
-                    <h3 class="job-title">${formData.get('jobTitle')}</h3>
-                    <p style="margin: 0.5rem 0; color: #cbd5e1;">${formData.get('jobDescription')}</p>
-                    
-                    <div class="card-info">
-                        <div class="info-item">
-                            <span>👤</span>
-                            <span>${formData.get('jobEmployer')}</span>
-                        </div>
-                        <div class="info-item">
-                            <span>📍</span>
-                            <span>${formData.get('jobLocation')}</span>
-                        </div>
-                        <div class="info-item">
-                            <span>⏱️</span>
-                            <span>${formData.get('jobDuration')}</span>
-                        </div>
-                        <div class="info-item">
-                            <span>💰</span>
-                            <span>₹${formData.get('jobBudget')}/day</span>
-                        </div>
-                    </div>
-
-                    <div class="skills">
-                        ${requirements.map(req => `<span class="skill-tag">${req}</span>`).join('')}
-                    </div>
-
-                    <div class="card-actions">
-                        <button class="btn btn-outline btn-small">View Details</button>
-                    </div>
-                </div>
-            `;
-            
-            document.querySelector('.content-grid').insertAdjacentHTML('afterbegin', jobCard);
-            closeModal('jobModal');
-            
-            // Update job request count in tab
-            const jobTab = document.querySelector('.tab-btn.active');
-            if (jobTab) {
-                const currentCount = parseInt(jobTab.textContent.match(/\d+/)[0]);
-                jobTab.textContent = `Need Worker (${currentCount + 1})`;
-            }
+            const payload = {
+                title: formData.get('jobTitle'),
+                category: formData.get('jobCategory'),
+                employer: formData.get('jobEmployer'),
+                location: formData.get('jobLocation'),
+                urgency: formData.get('jobUrgency'),
+                duration: formData.get('jobDuration'),
+                budget: Number(formData.get('jobBudget')),
+                requirements: String(formData.get('jobRequirements')||'').split(',').map(s=>s.trim()).filter(Boolean),
+                description: formData.get('jobDescription')
+            };
+            try{
+                const res = await fetch('/skills/jobs', {
+                    method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(payload)
+                });
+                if(res.status===401){ alert('Please login to post a job request.'); window.location.href='/login'; return; }
+                if(!res.ok){ const err=await res.json().catch(()=>({error:'Failed to create'})); alert(err.error||'Failed to create'); return; }
+                closeModal('jobModal');
+                await loadSkillsData();
+            }catch(err){ alert('Network error'); }
         });
+
+        function downloadVCard({ name, email, phone, bio }){
+            const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${name||''}\nEMAIL:${email||''}\nTEL:${phone||''}\nNOTE:${bio||''}\nEND:VCARD`;
+            const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'resume.vcf';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(a.href);
+            a.remove();
+        }
 
         // Tab switching functionality
         document.addEventListener('DOMContentLoaded', function() {
