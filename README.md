@@ -2,8 +2,6 @@
 
 > *A real-time community-powered platform where people can get or offer help in emergencies, find local job gigs, and report threats or injustice — all in one place.*
 
----
-
 ### 🏗️ Project Status: In Development
 
 > ⚠️ *This project is currently under active development by our team.*  
